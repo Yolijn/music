@@ -1,12 +1,15 @@
 'use strict';
+
+const config = require('./config.js');
 const yargs = require('yargs');
 const path = require('path');
 const cq = require('concurrent-queue');
 const gfs = require('graceful-fs');
 const musicmd = require('musicmetadata');
+const acoustid = require('acoustid');
 
-const IMAGE_REGEXP = (/\.(gif|jpg|jpeg|tiff|png)$/i);
-const ROON_AUDIO_REGEXP = (/\.(WAV|WAV64|AIFF|FLAC|ALAC|OGG|MP3|AAC)$/i);
+const MusicLibraryIndex = require('music-library-index');
+const PouchDB = require('pouchdb');
 
 // Create folderQueue FIFO queue with callback function
 const folderQueue = cq();
@@ -26,6 +29,17 @@ let paths = args.demandOption(['root'], 'Provide root directory path(s), if a pa
            .coerce(['root'], a => a.map(b => path.resolve(b)))
            .argv
            .root;
+
+// Setup library for storing and sorting metadata
+let library = new MusicLibraryIndex();
+
+// Setup database for permanent storage of medadata
+let musicDB = new PouchDB('http://127.0.0.1:5984/music_db', {
+    auth: {
+        username: config.DB_USER,
+        password: config.DB_PASS
+    }
+});
 
 /** */
 function processQueue(task)
@@ -51,8 +65,8 @@ function readDir(dirPath)
         let contentPaths = contents.map(item => path.join(dirPath, item));
         let folders = contentPaths.filter(content => gfs.statSync(content).isDirectory());
         let files = contentPaths.filter(content => gfs.statSync(content).isFile());
-        let musicFiles = files.filter(content => ROON_AUDIO_REGEXP.test(content));
-        let imageFiles = files.filter(content => IMAGE_REGEXP.test(content));
+        let musicFiles = files.filter(content => config.AUDIO_REGEXP.test(content));
+        let imageFiles = files.filter(content => config.IMAGE_REGEXP.test(content));
 
         folders.map(queueFolder);
         musicFiles.map(queueMusicFile);
@@ -81,17 +95,35 @@ function logImageFile(filePath)
 /** */
 function getMetadata(filePath)
 {
-    let readableStream = gfs.createReadStream(filePath);
+    // let readableStream = gfs.createReadStream(filePath);
+    // let getData = new Promise((resolve, reject) =>
+    // {
+    //     musicmd(readableStream, (err, data) =>
+    //     {
+    //         if (err)
+    //         {
+    //             reject(err);
+    //         }
 
-    musicmd(readableStream, (err, metadata) =>
+    //         readableStream.close();
+    //         resolve(data);
+    //     });
+    // });
+
+    // getData.then(data => console.log(data));
+
+    /** */
+    function getData(err, results)
     {
         if (err)
         {
             throw err;
         }
 
-        console.log(metadata);
-    });
+        console.dir(results);
+    }
+
+    acoustid(filePath, { key: config.ACOUSTIC_API.MYMUSICPLAYER }, getData);
 }
 
 paths.forEach(queueFolder);

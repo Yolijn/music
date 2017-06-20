@@ -9,9 +9,12 @@
   "author": "Yolijn van der Kolk",
   "license": "ISC",
   "dependencies": {
+    "acoustid": "^1.2.1",
     "concurrent-queue": "^7.0.1",
     "graceful-fs": "^4.1.11",
+    "music-library-index": "^2.1.0",
     "musicmetadata": "^2.0.5",
+    "pouchdb": "^6.2.0",
     "yargs": "^8.0.2"
   }
 }
