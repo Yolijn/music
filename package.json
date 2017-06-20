@@ -2,10 +2,15 @@
   "name": "index_music",
   "version": "1.0.0",
   "description": "Use NodeJS to get music metadata from root directory input to a database",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node index.js --root /Volumes/music ../../Music",
+    "start": "node index.js --root ../../Music"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Yolijn van der Kolk",
+  "license": "ISC",
+  "dependencies": {
+    "concurrent-queue": "^7.0.1",
+    "graceful-fs": "^4.1.11",
+    "yargs": "^8.0.2"
+  }
 }
