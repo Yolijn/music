@@ -68,68 +68,68 @@ function readDir(dirPath)
         let musicFiles = files.filter(content => config.AUDIO_REGEXP.test(content));
         let imageFiles = files.filter(content => config.IMAGE_REGEXP.test(content));
 
-        folders.map(queueFolder);
-        musicFiles.map(queueMusicFile);
-        imageFiles.map(logImageFile);
+        folders.map(handleFolder);
+        musicFiles.map(handleMusicFile);
+        imageFiles.map(handleImageFile);
     });
 }
 
 /** */
-function queueFolder(folderPath)
+function handleFolder(folderPath)
 {
-    folderQueue(folderPath);
+    folderQueue(folderPath)
+        .then(readDir);
 }
 
 /** */
-function queueMusicFile(filePath)
+function handleMusicFile(filePath)
 {
-    musicQueue(filePath);
+    musicQueue(filePath)
+        .then(getMetaAcoustid)
+        .then(console.log);
 }
 
 /** */
-function logImageFile(filePath)
+function handleImageFile(filePath)
 {
     imageFilePaths.push(filePath);
 }
 
 /** */
-function getMetadata(filePath)
+function getMusicMetadata(filePath)
 {
-    // let readableStream = gfs.createReadStream(filePath);
-    // let getData = new Promise((resolve, reject) =>
-    // {
-    //     musicmd(readableStream, (err, data) =>
-    //     {
-    //         if (err)
-    //         {
-    //             reject(err);
-    //         }
+    let readableStream = gfs.createReadStream(filePath);
 
-    //         readableStream.close();
-    //         resolve(data);
-    //     });
-    // });
-
-    // getData.then(data => console.log(data));
-
-    /** */
-    function getData(err, results)
-    {
-        if (err)
+    return new Promise((resolve, reject) =>
+        musicmd(readableStream, (err, results) =>
         {
-            throw err;
-        }
+            if(err)
+            {
+                reject(err);
+            }
 
-        console.dir(results);
-    }
-
-    acoustid(filePath, { key: config.ACOUSTIC_API.MYMUSICPLAYER }, getData);
+            resolve(results);
+            readableStream.close();
+        })
+    );
 }
 
-paths.forEach(queueFolder);
+/** */
+function getMetaAcoustid(filePath)
+{
+    return new Promise((resolve, reject) =>
+        acoustid(filePath, { key: config.ACOUSTIC_API.MYMUSICPLAYER }, (err, results) =>
+        {
+            if (err)
+            {
+                reject(err);
+            }
 
+            resolve(results);
+        })
+    );
+}
+
+paths.forEach(handleFolder);
 folderQueue.process(processQueue);
-folderQueue.processingStarted(processing => readDir(processing.item));
-
 musicQueue.process(processQueue);
-musicQueue.processingStarted(processing => getMetadata(processing.item));
