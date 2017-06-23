@@ -42,7 +42,16 @@ let musicDB = new PouchDB('http://127.0.0.1:5984/music_db', {
 });
 
 /** */
-function processQueue(task)
+function handleError(err)
+{
+    if(err)
+    {
+        reject(err);
+    }
+}
+
+/** */
+function processTask(task)
 {
     return new Promise((resolve, reject) =>
     {
@@ -57,16 +66,13 @@ function readDir(dirPath)
 
     gfs.readdir(dirPath, function (err, contents)
     {
-        if(err)
-        {
-            throw err;
-        }
-
         let contentPaths = contents.map(item => path.join(dirPath, item));
         let folders = contentPaths.filter(content => gfs.statSync(content).isDirectory());
         let files = contentPaths.filter(content => gfs.statSync(content).isFile());
         let musicFiles = files.filter(content => config.AUDIO_REGEXP.test(content));
         let imageFiles = files.filter(content => config.IMAGE_REGEXP.test(content));
+
+        handleError(err);
 
         folders.map(handleFolder);
         musicFiles.map(handleMusicFile);
@@ -85,8 +91,8 @@ function handleFolder(folderPath)
 function handleMusicFile(filePath)
 {
     musicQueue(filePath)
-        .then(getMetaAcoustid)
-        .then(console.log);
+        .then(getMetaAcoustid);
+        // .then(addToLibrary);
 }
 
 /** */
@@ -103,11 +109,7 @@ function getMusicMetadata(filePath)
     return new Promise((resolve, reject) =>
         musicmd(readableStream, (err, results) =>
         {
-            if(err)
-            {
-                reject(err);
-            }
-
+            handleError(err);
             resolve(results);
             readableStream.close();
         })
@@ -118,18 +120,31 @@ function getMusicMetadata(filePath)
 function getMetaAcoustid(filePath)
 {
     return new Promise((resolve, reject) =>
-        acoustid(filePath, { key: config.ACOUSTIC_API.MYMUSICPLAYER }, (err, results) =>
+        acoustid(filePath, { key: config.ACOUSTIC_API.MYMUSICPLAYER }, (err, result) =>
         {
-            if (err)
-            {
-                reject(err);
-            }
+            handleError(err);
 
-            resolve(results);
+            let track = {
+                file:    filePath,
+                name:    result[0].recordings[0].title,
+                artists: result[0].recordings[0].artists,
+            };
+
+            /*
+                albumName: '',
+                year: '',
+                genre: '',
+                track: '',
+                albumArtistName: '',
+            */
+
+            console.log(result[0].recordings[0]);
+
+            resolve(metadata);
         })
     );
 }
 
 paths.forEach(handleFolder);
-folderQueue.process(processQueue);
-musicQueue.process(processQueue);
+folderQueue.process(processTask);
+musicQueue.process(processTask);
