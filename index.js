@@ -1,37 +1,38 @@
 'use strict';
 
-const config = require('./config.js');
+const config = require('./config.json');
 const yargs = require('yargs');
 const path = require('path');
-const cq = require('concurrent-queue');
+const createQueue = require('concurrent-queue');
 const gfs = require('graceful-fs');
 const musicmd = require('musicmetadata');
 const acoustid = require('acoustid');
 
-const MusicLibraryIndex = require('music-library-index');
 const PouchDB = require('pouchdb');
 
+const AUDIO_REGEXP = new RegExp(config.AUDIO_REGEXP, 'i');
+const IMAGE_REGEXP = new RegExp(config.IMAGE_REGEXP, 'i');
+
 // Create folderQueue FIFO queue with callback function
-const folderQueue = cq();
-const musicQueue = cq();
+const folderQueue = createQueue();
+const musicQueue = createQueue();
 
 // TODO: Use a LIFO Stack to save and retrieve image files
 let imageFilePaths = [];
 
-// Use CLI arguments for root file paths
-let args = yargs.option('root', {
+let yargsConfig = {
     type:    'array',
     desc:    'Lists the path for one or more root directories',
     example: 'script --root /Users/user/Music'
-});
+};
 
-let paths = args.demandOption(['root'], 'Provide root directory path(s), if a path contains whitespace: use quotes')
-           .coerce(['root'], a => a.map(b => path.resolve(b)))
-           .argv
-           .root;
+// Use CLI arguments for root file paths
+let args = yargs.option('root', yargsConfig)
+                .demandOption(['root'], 'Provide root directory path(s), if a path contains whitespace: use quotes')
+                .coerce(['root'], a => a.map(b => path.resolve(b)))
+                .argv;
 
-// Setup library for storing and sorting metadata
-let library = new MusicLibraryIndex();
+let roots = args.root;
 
 // Setup database for permanent storage of medadata
 let musicDB = new PouchDB('http://127.0.0.1:5984/music_db', {
@@ -42,11 +43,15 @@ let musicDB = new PouchDB('http://127.0.0.1:5984/music_db', {
 });
 
 /** */
-function handleError(err)
+function handleError(err, handlerFn)
 {
-    if(err)
+    if (handlerFn && err)
     {
-        reject(err);
+        handlerFn(err);
+    }
+    else if (err)
+    {
+        throw err;
     }
 }
 
@@ -69,8 +74,8 @@ function readDir(dirPath)
         let contentPaths = contents.map(item => path.join(dirPath, item));
         let folders = contentPaths.filter(content => gfs.statSync(content).isDirectory());
         let files = contentPaths.filter(content => gfs.statSync(content).isFile());
-        let musicFiles = files.filter(content => config.AUDIO_REGEXP.test(content));
-        let imageFiles = files.filter(content => config.IMAGE_REGEXP.test(content));
+        let musicFiles = files.filter(content => AUDIO_REGEXP.test(content));
+        let imageFiles = files.filter(content => IMAGE_REGEXP.test(content));
 
         handleError(err);
 
@@ -91,7 +96,8 @@ function handleFolder(folderPath)
 function handleMusicFile(filePath)
 {
     musicQueue(filePath)
-        .then(getMetaAcoustid);
+        .then(getMetaAcoustid)
+        .then(console.log);
         // .then(addToLibrary);
 }
 
@@ -109,7 +115,7 @@ function getMusicMetadata(filePath)
     return new Promise((resolve, reject) =>
         musicmd(readableStream, (err, results) =>
         {
-            handleError(err);
+            handleError(err, reject);
             resolve(results);
             readableStream.close();
         })
@@ -122,7 +128,7 @@ function getMetaAcoustid(filePath)
     return new Promise((resolve, reject) =>
         acoustid(filePath, { key: config.ACOUSTIC_API.MYMUSICPLAYER }, (err, result) =>
         {
-            handleError(err);
+            handleError(err, reject);
 
             let track = {
                 file:    filePath,
@@ -138,13 +144,11 @@ function getMetaAcoustid(filePath)
                 albumArtistName: '',
             */
 
-            console.log(result[0].recordings[0]);
-
-            resolve(metadata);
+            resolve(track);
         })
     );
 }
 
-paths.forEach(handleFolder);
+roots.forEach(handleFolder);
 folderQueue.process(processTask);
 musicQueue.process(processTask);
