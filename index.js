@@ -43,11 +43,11 @@ let musicDB = new PouchDB('http://127.0.0.1:5984/music_db', {
 });
 
 /** */
-function handleError(err, handlerFn)
+function handleError(err, errorCallback)
 {
-    if (handlerFn && err)
+    if (errorCallback && err)
     {
-        handlerFn(err);
+        errorCallback(err);
     }
     else if (err)
     {
