@@ -11,6 +11,7 @@
   "dependencies": {
     "acoustid": "^1.2.1",
     "concurrent-queue": "^7.0.1",
+    "express": "^4.15.3",
     "graceful-fs": "^4.1.11",
     "music-library-index": "^2.1.0",
     "musicmetadata": "^2.0.5",
