@@ -4,7 +4,15 @@ const data = require('./mock.json');
 
 let app = express();
 
-app.use('/play', express.static(data.root));
+// app.use('/play', express.static(data.root));
+
+app.get('/play/:id', (req, res) =>
+{
+    let track = data.tracks[req.params.id];
+    let file = path.resolve(data.root, track.path);
+
+    res.sendFile(file);
+});
 
 app.get('/', (req, res) =>
 {
@@ -14,11 +22,10 @@ app.get('/', (req, res) =>
 app.get('/track/:id', (req, res, next) =>
 {
     let track = data.tracks[req.params.id];
-    let path = `/play/${track.path}`;
 
     res.send(
         `<h1>${track.title}</h1>
-        <audio controls="controls" src="${path}"></audio>`
+        <audio controls="controls" src="/play/${track._id}"></audio>`
     );
 });
 
