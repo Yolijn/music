@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "Use NodeJS to get music metadata from root directory input to a database",
   "scripts": {
-    "test": "node index.js --root /Volumes/music ../../Music",
-    "start": "node index.js --root '/Volumes/music/lossless/ungrouped/Pink Martini'"
+    "test": "node scripts/indexFiles.js --root /Volumes/music ../../Music",
+    "blondie": "node scripts/indexFiles.js --root /Volumes/music/lossless/pop/Blondie",
+    "start": "node scripts/indexFiles.js --root '/Volumes/music/lossless/ungrouped/Pink Martini'",
+    "deleteDB": "node scripts/cli/deleteDB.js"
   },
   "author": "Yolijn van der Kolk",
   "license": "ISC",
@@ -16,6 +18,7 @@
     "music-library-index": "^2.1.0",
     "musicmetadata": "^2.0.5",
     "pouchdb": "^6.2.0",
+    "pouchdb-find": "^6.2.0",
     "yargs": "^8.0.2"
   }
 }

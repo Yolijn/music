@@ -1,0 +1,4 @@
+{
+    "IMAGE_REGEXP": "\\.(gif|jpg|jpeg|tiff|png)$",
+    "AUDIO_REGEXP": "\\.(WAV|WAV64|AIFF|FLAC|ALAC|OGG|MP3|AAC)$"
+}
