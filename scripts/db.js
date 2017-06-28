@@ -48,6 +48,10 @@ db.saveTrack = track =>
                 .then(console.log('saved', track._id))
                 .catch(helperFunctions.handleError);
         }
+        else
+        {
+            console.log('already exists', track._id);
+        }
     });
 };
 

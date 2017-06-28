@@ -7,7 +7,7 @@ const path = require('path');
 const createQueue = require('concurrent-queue');
 const gfs = require('graceful-fs');
 const db = require('./db.js');
-const Track = require('./track.js');
+const getAllMetadata = require('./getAllMetadata.js');
 
 const AUDIO_REGEXP = new RegExp(config.AUDIO_REGEXP, 'i');
 const IMAGE_REGEXP = new RegExp(config.IMAGE_REGEXP, 'i');
@@ -57,8 +57,7 @@ function readDir(dirPath)
 /** */
 function addToLibrary(track)
 {
-    // console.log(track);
-    // db.saveTrack(track);
+    db.saveTrack(track);
 }
 
 /** */
@@ -73,16 +72,8 @@ function handleFolder(folderPath)
 function handleMusicFile(filePath)
 {
     musicQueue(filePath)
-        .then(file => new Track(file))
-        .then(track =>
-        {
-            track.getMetadata();
-        })
-        .then(track =>
-        {
-            console.log(track);
-            // addToLibrary(track);
-        });
+        .then(getAllMetadata)
+        .then(addToLibrary);
 }
 
 /** */

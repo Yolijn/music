@@ -6,37 +6,11 @@ const handleError = helperFunctions.handleError;
 const responseToPromise = helperFunctions.responseToPromise;
 const config = require('./config/acoustid.json');
 
-
-class Track {
-    constructor(filePath)
-    {
-        this.file = filePath;
-    }
-
-    getMetadata()
-    {
-        return new Promise((resolve, reject) =>
-        {
-            getMetaAcoustid(this.file)
-                .then(metadata =>
-                {
-                    getMusicMetadata(this.file)
-                        .then(musicmetadata =>
-                            Object.assign({}, acoustidData, musicmetadata)
-                        )
-                        .then(result =>
-                        {
-                            this._id = result._id;
-                            this.name = result.name;
-                            this.artists = result.artists;
-                            this.duration = result.duration;
-                            this.album = result.album;
-                        })
-                        .then(console.log(this))
-                        .catch(err => handleError(err, reject));
-                });
-        });
-    }
+/** */
+function getAllMetadata(filePath)
+{
+    return Promise.all([getMetaAcoustid(filePath), getMusicMetadata(filePath)])
+        .then(results => results.reduce((allData, data) => Object.assign(allData, data), {}));
 }
 
 /** */
@@ -87,4 +61,4 @@ function getMetaAcoustid(filePath)
     );
 }
 
-module.exports = Track;
+module.exports = getAllMetadata;
