@@ -1,6 +1,4 @@
 const helperFunctions = require('./helperFunctions.js');
-const handleError = helperFunctions.handleError;
-const responseToPromise = helperFunctions.responseToPromise;
 const config = require('./config/indexFiles.json');
 const yargs = require('yargs');
 const path = require('path');
@@ -36,7 +34,7 @@ let roots = args.root;
 /** */
 function readDir(dirPath)
 {
-    console.log('processing started', dirPath);
+    helperFunctions.log('processing started', dirPath);
 
     gfs.readdir(dirPath, function (err, contents)
     {
@@ -46,7 +44,7 @@ function readDir(dirPath)
         let musicFiles = files.filter(content => AUDIO_REGEXP.test(content));
         let imageFiles = files.filter(content => IMAGE_REGEXP.test(content));
 
-        handleError(err);
+        helperFunctions.handleError(err);
 
         folders.map(handleFolder);
         musicFiles.map(handleMusicFile);
@@ -65,7 +63,7 @@ function handleFolder(folderPath)
 {
     folderQueue(folderPath)
         .then(readDir)
-        .catch(handleError);
+        .catch(helperFunctions.handleError);
 }
 
 /** */
@@ -83,5 +81,5 @@ function handleImageFile(filePath)
 }
 
 roots.forEach(handleFolder);
-folderQueue.process(responseToPromise);
-musicQueue.process(responseToPromise);
+folderQueue.process(helperFunctions.responseToPromise);
+musicQueue.process(helperFunctions.responseToPromise);

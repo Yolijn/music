@@ -1,3 +1,4 @@
 {
-  "SHOW_WARNINGS": false
+  "SHOW_WARNINGS": false,
+  "SHOW_LOGS": true
 }

@@ -18,12 +18,12 @@ database.createIndex({
     index: {
         fields: ['type', '_id', 'name', 'url']
     }
-}).then(result => console.log('DB Indexes are created'))
+}).then(result => helperFunctions.log('DB Indexes are created'))
 .catch(helperFunctions.handleError);
 
 db.delete = () =>
 {
-    console.log('deleting db');
+    helperFunctions.log('deleting db');
     database.destroy()
         .then(helperFunctions.logSuccess)
         .catch(helperFunctions.handleError);
@@ -45,12 +45,12 @@ db.saveTrack = track =>
         if (!exists)
         {
             database.put(track)
-                .then(console.log('saved', track._id))
+                .then(helperFunctions.log('saved', track._id))
                 .catch(helperFunctions.handleError);
         }
         else
         {
-            console.log('already exists', track._id);
+            helperFunctions.log('already exists', track._id);
         }
     });
 };

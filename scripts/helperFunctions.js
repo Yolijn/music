@@ -8,8 +8,7 @@ exports.handleError = (err, errorCallback) =>
     }
     else if (err)
     {
-        console.log('error', err);
-        // throw err;
+        throw err;
     }
 };
 
@@ -27,4 +26,10 @@ exports.handleWarning = (warning, warningCallback) =>
 
 exports.responseToPromise = response => new Promise((resolve, reject) => resolve(response));
 
-exports.logSuccess = response  => console.log('success', response);
+exports.log = (...msg) =>
+{
+    if (developerConfig.SHOW_LOGS)
+    {
+        console.log(...msg);
+    }
+};
