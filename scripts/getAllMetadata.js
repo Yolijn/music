@@ -10,7 +10,7 @@ const config = require('./config/acoustid.json');
 function getAllMetadata(filePath)
 {
     return Promise.all([getMetaAcoustid(filePath), getMusicMetadata(filePath)])
-        .then(results => results.reduce((allData, data) => Object.assign(allData, data), {}));
+        .then(results => results.reduce((allData, data) => Object.assign(allData, data), { location: filePath }));
 }
 
 /** */
@@ -52,7 +52,7 @@ function getMetaAcoustid(filePath)
 
             let track = {
                 _id:      result[0].recordings[0].id,
-                name:     result[0].recordings[0].title,
+                title:     result[0].recordings[0].title,
                 artists:  result[0].recordings[0].artists
             };
 

@@ -21,6 +21,15 @@ database.createIndex({
 }).then(result => helperFunctions.log('DB Indexes are created'))
 .catch(helperFunctions.handleError);
 
+db.getAll = () =>
+    database.allDocs({ 'include_docs': true })
+        .then(docs => docs.rows.filter(item => !/^_design/.test(item.id)))
+        .then(docs => docs.map(item => item.doc));
+
+db.get = id =>
+    database.get(id)
+        .catch(helperFunctions.handleError);
+
 db.delete = () =>
 {
     helperFunctions.log('deleting db');
