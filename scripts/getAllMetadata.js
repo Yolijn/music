@@ -52,7 +52,7 @@ function getMetaAcoustid(filePath)
 
             let track = {
                 _id:      result[0].recordings[0].id,
-                title:     result[0].recordings[0].title,
+                name:     result[0].recordings[0].title,
                 artists:  result[0].recordings[0].artists
             };
 

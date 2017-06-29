@@ -103,13 +103,13 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var Promise = _interopDefault(__webpack_require__(5));
+var Promise = _interopDefault(__webpack_require__(6));
 var getArguments = _interopDefault(__webpack_require__(4));
-var pouchdbCollections = __webpack_require__(6);
-var events = __webpack_require__(9);
+var pouchdbCollections = __webpack_require__(7);
+var events = __webpack_require__(10);
 var inherits = _interopDefault(__webpack_require__(0));
 var immediate = _interopDefault(__webpack_require__(3));
-var pouchdbErrors = __webpack_require__(25);
+var pouchdbErrors = __webpack_require__(27);
 
 function isBinaryObject(object) {
   return (typeof ArrayBuffer !== 'undefined' && object instanceof ArrayBuffer) ||
@@ -1140,6 +1140,196 @@ function argsArray(fun) {
 
 /***/ }),
 /* 5 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1147,7 +1337,7 @@ function argsArray(fun) {
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var lie = _interopDefault(__webpack_require__(8));
+var lie = _interopDefault(__webpack_require__(9));
 
 /* istanbul ignore next */
 var PouchPromise = typeof Promise === 'function' ? Promise : lie;
@@ -1156,7 +1346,7 @@ module.exports = PouchPromise;
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1261,7 +1451,7 @@ function supportsMapAndSet() {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1649,7 +1839,7 @@ exports.parseIndexableString = parseIndexableString;
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1909,7 +2099,7 @@ function race(iterable) {
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -2214,196 +2404,6 @@ function isObject(arg) {
 function isUndefined(arg) {
   return arg === void 0;
 }
-
-
-/***/ }),
-/* 10 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
 
 
 /***/ }),
@@ -3406,47 +3406,45 @@ exports.stringMd5 = stringMd5;
 "use strict";
 
 
-var _db = __webpack_require__(15);
-
-var _db2 = _interopRequireDefault(_db);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _databases = __webpack_require__(15);
 
 /** */
 function initApp() {
-    var getFiles = _db2.default.getAll();
+    var getFiles = _databases.tracks.getAll();
     var app = document.getElementById('app');
 
     console.log(app);
 
     /** */
     function showTrack(item) {
+        console.log(item);
         var output = document.createElement('div');
-        var artists = document.createElement('h2');
+        var performers = document.createElement('h2');
         var track = document.createElement('p');
         var tracklink = document.createElement('a');
 
-        var getArtists = function getArtists(artists) {
-            return artists ? artists.map(function (artist) {
+        var getArtists = function getArtists(results) {
+            return results ? results.map(function (artist) {
                 return artist.name;
             }).join(' & ') : '';
         };
 
         tracklink.setAttribute('href', '/track/' + item._id);
-        tracklink.textContent = '' + item.title;
+        tracklink.textContent = '' + item.name;
 
         track.appendChild(tracklink);
 
-        artists.textContent = '' + getArtists(item.artists);
+        performers.textContent = '' + getArtists(item.artists);
 
-        output.appendChild(artists);
+        output.appendChild(performers);
         output.appendChild(track);
 
         app.appendChild(output);
     }
 
-    getFiles.then(function (tracks) {
-        tracks.map(showTrack);
+    // TODO: show files based on URL
+    getFiles.then(function (files) {
+        files.map(showTrack);
     });
 }
 
@@ -3463,80 +3461,115 @@ document.addEventListener('readystatechange', function (evt) {
 "use strict";
 
 
-var couchDB = __webpack_require__(16);
-var PouchDB = __webpack_require__(17);
-var helperFunctions = __webpack_require__(22);
+var Database = __webpack_require__(16);
 
-// Setup database for permanent storage of medadata
-PouchDB.plugin(__webpack_require__(24));
-
-var db = {};
-
-var database = new PouchDB(couchDB.URL, {
-    auth: {
-        username: couchDB.USER,
-        password: couchDB.PASSWORD
-    }
-});
-
-database.createIndex({
-    index: {
-        fields: ['type', '_id', 'name', 'url']
-    }
-}).then(function (result) {
-    return helperFunctions.log('DB Indexes are created');
-}).catch(helperFunctions.handleError);
-
-db.getAll = function () {
-    return database.allDocs({ 'include_docs': true }).then(function (docs) {
-        return docs.rows.filter(function (item) {
-            return !/^_design/.test(item.id);
-        });
-    }).then(function (docs) {
-        return docs.map(function (item) {
-            return item.doc;
-        });
-    });
-};
-
-db.get = function (id) {
-    return database.get(id).catch(helperFunctions.handleError);
-};
-
-db.delete = function () {
-    helperFunctions.log('deleting db');
-    database.destroy().then(helperFunctions.logSuccess).catch(helperFunctions.handleError);
-};
-
-db.saveTrack = function (track) {
-    database.find({ selector: { _id: track._id } }).then(function (response, err) {
-        helperFunctions.handleError(err);
-        helperFunctions.handleWarning(response.warning);
-
-        return response.docs.length > 0;
-    }).then(function (exists) {
-        if (!exists) {
-            database.put(track).then(helperFunctions.log('saved', track._id)).catch(helperFunctions.handleError);
-        } else {
-            helperFunctions.log('already exists', track._id);
-        }
-    });
-};
-
-module.exports = db;
+exports.tracks = new Database('tracks');
+exports.artists = new Database('artists');
+exports.albums = new Database('albums');
 
 /***/ }),
 /* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var couchDB = __webpack_require__(17);
+var PouchDB = __webpack_require__(18);
+var helperFunctions = __webpack_require__(23);
+var path = __webpack_require__(25);
+
+// Setup database for permanent storage of medadata
+PouchDB.plugin(__webpack_require__(26));
+
+var Database = function () {
+    function Database(name) {
+        _classCallCheck(this, Database);
+
+        this.database = new PouchDB(couchDB.URL + name, {
+            auth: {
+                username: couchDB.USER,
+                password: couchDB.PASSWORD
+            }
+        });
+
+        this.database.createIndex({
+            index: {
+                fields: ['_id', 'name', 'location']
+            }
+        }).then(helperFunctions.log('Database "' + name + '" created')).catch(helperFunctions.handleError);
+    }
+
+    _createClass(Database, [{
+        key: 'getAll',
+        value: function getAll() {
+            return this.database.allDocs({ 'include_docs': true }).catch(helperFunctions.handleError).then(function (docs) {
+                return docs.rows.filter(function (item) {
+                    return !/^_design/.test(item.id);
+                });
+            }).then(function (docs) {
+                return docs.map(function (item) {
+                    return item.doc;
+                });
+            });
+        }
+    }, {
+        key: 'get',
+        value: function get(id) {
+            return this.database.get(id).catch(helperFunctions.handleError);
+        }
+    }, {
+        key: 'save',
+        value: function save(document) {
+            var _this = this;
+
+            this.database.find({ selector: { _id: document._id } }).then(function (response, err) {
+                helperFunctions.handleError(err);
+                helperFunctions.handleWarning(response.warning);
+
+                return response.docs.length > 0;
+            }).then(function (exists) {
+                if (!exists) {
+                    _this.database.put(document).then(helperFunctions.log('saved', document._id)).catch(helperFunctions.handleError);
+                } else {
+                    helperFunctions.log('already exists', document._id);
+                }
+            });
+        }
+    }, {
+        key: 'delete',
+        value: function _delete(id) {
+            this.get(id).then(this.database.remove).then(helperFunctions.log('removed', id)).catch(helperFunctions.handleError);
+        }
+    }, {
+        key: 'destroy',
+        value: function destroy() {
+            helperFunctions.log('deleting db');
+            this.database.destroy().then(helperFunctions.logSuccess).catch(helperFunctions.handleError);
+        }
+    }]);
+
+    return Database;
+}();
+
+module.exports = Database;
+
+/***/ }),
+/* 17 */
 /***/ (function(module, exports) {
 
 module.exports = {
-	"URL": "http://127.0.0.1:5984/music_db",
+	"URL": "http://127.0.0.1:5984/",
 	"USER": "music_db",
 	"PASSWORD": "eyesight.tower.briton.tumor.nimbus.acidic.geminate.allotted.wright.rangoon"
 };
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3544,14 +3577,14 @@ module.exports = {
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var lie = _interopDefault(__webpack_require__(8));
+var lie = _interopDefault(__webpack_require__(9));
 var getArguments = _interopDefault(__webpack_require__(4));
-var events = __webpack_require__(9);
+var events = __webpack_require__(10);
 var inherits = _interopDefault(__webpack_require__(0));
 var nextTick = _interopDefault(__webpack_require__(3));
-var debug = _interopDefault(__webpack_require__(18));
+var debug = _interopDefault(__webpack_require__(19));
 var Md5 = _interopDefault(__webpack_require__(11));
-var vuvuzela = _interopDefault(__webpack_require__(21));
+var vuvuzela = _interopDefault(__webpack_require__(22));
 
 /* istanbul ignore next */
 var PouchPromise$1 = typeof Promise === 'function' ? Promise : lie;
@@ -15669,7 +15702,7 @@ module.exports = PouchDB$5;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -15678,7 +15711,7 @@ module.exports = PouchDB$5;
  * Expose `debug()` as the module.
  */
 
-exports = module.exports = __webpack_require__(19);
+exports = module.exports = __webpack_require__(20);
 exports.log = log;
 exports.formatArgs = formatArgs;
 exports.save = save;
@@ -15855,10 +15888,10 @@ function localstorage() {
   } catch (e) {}
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
@@ -15874,7 +15907,7 @@ exports.coerce = coerce;
 exports.disable = disable;
 exports.enable = enable;
 exports.enabled = enabled;
-exports.humanize = __webpack_require__(20);
+exports.humanize = __webpack_require__(21);
 
 /**
  * The currently active debug mode names, and names to skip.
@@ -16066,7 +16099,7 @@ function coerce(val) {
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 /**
@@ -16221,7 +16254,7 @@ function plural(ms, n, name) {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16401,13 +16434,13 @@ exports.parse = function (str) {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var developerConfig = __webpack_require__(23);
+var developerConfig = __webpack_require__(24);
 
 exports.handleError = function (err, errorCallback) {
     if (errorCallback && err) {
@@ -16440,7 +16473,7 @@ exports.log = function () {
 };
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -16449,7 +16482,238 @@ module.exports = {
 };
 
 /***/ }),
-/* 24 */
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : process.cwd();
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+  var isAbsolute = exports.isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isAbsolute ? '/' : '') + path;
+};
+
+// posix version
+exports.isAbsolute = function(path) {
+  return path.charAt(0) === '/';
+};
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+};
+
+
+// path.relative(from, to)
+// posix version
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+exports.delimiter = ':';
+
+exports.dirname = function(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPath(path)[3];
+};
+
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b'
+    ? function (str, start, len) { return str.substr(start, len) }
+    : function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    }
+;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
+
+/***/ }),
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16458,10 +16722,10 @@ module.exports = {
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var pouchdbUtils = __webpack_require__(1);
-var Promise = _interopDefault(__webpack_require__(5));
-var pouchdbSelectorCore = __webpack_require__(26);
-var abstractMapReduce = _interopDefault(__webpack_require__(27));
-var pouchdbCollate = __webpack_require__(7);
+var Promise = _interopDefault(__webpack_require__(6));
+var pouchdbSelectorCore = __webpack_require__(28);
+var abstractMapReduce = _interopDefault(__webpack_require__(29));
+var pouchdbCollate = __webpack_require__(8);
 var pouchdbMd5 = __webpack_require__(13);
 
 // we restucture the supplied JSON considerably, because the official
@@ -17743,10 +18007,10 @@ plugin.deleteIndex = pouchdbUtils.toPromise(function (indexDef, callback) {
 
 module.exports = plugin;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17878,7 +18142,7 @@ exports.generateErrorFromResponse = generateErrorFromResponse;
 
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17887,7 +18151,7 @@ exports.generateErrorFromResponse = generateErrorFromResponse;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var pouchdbUtils = __webpack_require__(1);
-var pouchdbCollate = __webpack_require__(7);
+var pouchdbCollate = __webpack_require__(8);
 
 // this would just be "return doc[field]", but fields
 // can be "deep" due to dot notation
@@ -18443,7 +18707,7 @@ exports.parseField = parseField;
 
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18451,13 +18715,13 @@ exports.parseField = parseField;
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var Promise = _interopDefault(__webpack_require__(5));
-var pouchdbCollections = __webpack_require__(6);
+var Promise = _interopDefault(__webpack_require__(6));
+var pouchdbCollections = __webpack_require__(7);
 var pouchdbUtils = __webpack_require__(1);
 var pouchdbBinaryUtils = __webpack_require__(12);
-var pouchdbCollate = __webpack_require__(7);
+var pouchdbCollate = __webpack_require__(8);
 var pouchdbMd5 = __webpack_require__(13);
-var pouchdbMapreduceUtils = __webpack_require__(28);
+var pouchdbMapreduceUtils = __webpack_require__(30);
 
 /*
  * Simple task queue to sequentialize actions. Assumes
@@ -19469,7 +19733,7 @@ module.exports = createAbstractMapReduce;
 
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -19479,7 +19743,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var pouchdbCollections = __webpack_require__(6);
+var pouchdbCollections = __webpack_require__(7);
 var argsarray = _interopDefault(__webpack_require__(4));
 var pouchdbUtils = __webpack_require__(1);
 var inherits = _interopDefault(__webpack_require__(0));

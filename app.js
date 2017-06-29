@@ -1,8 +1,10 @@
 const express = require('express');
-const db = require('./scripts/db.js');
+const databases = require('./scripts/databases.js');
 
 let app = express();
-let getTrack = id => db.get(id);
+let getTrack = id => databases.tracks.get(id);
+let getArtist = id => databases.artists.get(id);
+let getAlbum = id => databases.albums.get(id);
 
 app.get('/', (req, res) =>
 {
@@ -19,7 +21,7 @@ app.get('/track/:id', (req, res, next) =>
     getTrack(req.params.id).then(track =>
     {
         res.send(
-            `<h1>${track.title}</h1>
+            `<h1>${track.name}</h1>
             <audio controls="controls" src="/play/${track._id}"></audio>`
         );
     })

@@ -4,7 +4,7 @@ const yargs = require('yargs');
 const path = require('path');
 const createQueue = require('concurrent-queue');
 const gfs = require('graceful-fs');
-const db = require('./db.js');
+const databases = require('./databases.js');
 const getAllMetadata = require('./getAllMetadata.js');
 
 const AUDIO_REGEXP = new RegExp(config.AUDIO_REGEXP, 'i');
@@ -55,7 +55,8 @@ function readDir(dirPath)
 /** */
 function addToLibrary(track)
 {
-    db.saveTrack(track);
+    // TODO: save tracks, albums, artists
+    databases.tracks.save(track);
 }
 
 /** */
