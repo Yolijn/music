@@ -39,10 +39,4 @@ function initApp()
     });
 }
 
-document.addEventListener('readystatechange', evt =>
-{
-    if (evt.target.readyState === 'complete')
-    {
-        initApp();
-    }
-}, false);
+document.addEventListener('DOMContentLoaded', initApp);

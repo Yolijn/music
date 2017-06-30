@@ -3448,11 +3448,7 @@ function initApp() {
     });
 }
 
-document.addEventListener('readystatechange', function (evt) {
-    if (evt.target.readyState === 'complete') {
-        initApp();
-    }
-}, false);
+document.addEventListener('DOMContentLoaded', initApp);
 
 /***/ }),
 /* 15 */
