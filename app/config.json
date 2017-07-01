@@ -7,6 +7,6 @@
   "AUDIO_REGEXP": "\\.(WAV|WAV64|AIFF|FLAC|ALAC|OGG|MP3|AAC)$",
   "ACOUSTID_USER": "QmIXm3EOIg",
   "ACOUSTID_KEY": "G3s5jCW2nd",
-  "roots": ["/Volumes/music/lossless/pop/Blondie"]
+  "rootDirs": ["/Volumes/music/lossless/pop/Blondie"]
 }
 

@@ -1,10 +1,12 @@
-let webpack = require('webpack');
-let webpackConfig = require('./../webpack.config.js');
-let path = require('path');
-let fs = require('fs');
-let mainPath = path.resolve(__dirname, '..', 'app', 'scripts', 'main.js');
-let helperFunctions = require('../app/scripts/helperfn.js');
-let watchOptions = {
+const webpack = require('webpack');
+const path = require('path');
+const fs = require('fs');
+const mainPath = path.resolve(__dirname, '..', 'app', 'scripts', 'main.js');
+const webpackConfig = require('./../webpack.config.js');
+
+const { log, handleError } = require('../app/scripts/helperfn.js');
+
+const watchOptions = {
     aggregateTimeout: 300,
     poll:             1000,
     ignored:          /^node_modules/
@@ -21,7 +23,7 @@ module.exports = () =>
     // set the time it started
     compiler.plugin('compile', () =>
     {
-        console.log('Bundling...');
+        log('Bundling...');
         bundleStart = Date.now();
     });
 
@@ -29,12 +31,12 @@ module.exports = () =>
     // time it took. Nice to have
     compiler.plugin('done', () =>
     {
-        console.log('Bundled in ' + (Date.now() - bundleStart) + 'ms!');
+        log('Bundled in ' + (Date.now() - bundleStart) + 'ms!');
     });
 
     compiler.watch(watchOptions, (err, stats) =>
     {
-        helperFunctions.handleError(err);
-        console.log('Watching...');
+        handleError(err);
+        log('Watching...');
     });
 };

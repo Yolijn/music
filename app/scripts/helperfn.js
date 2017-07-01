@@ -1,4 +1,4 @@
-let developerConfig = require('../config.json');
+let { SHOW_WARNINGS, SHOW_LOGS } = require('../config.json');
 
 exports.handleError = (err, errorCallback) =>
 {
@@ -18,7 +18,7 @@ exports.handleWarning = (warning, warningCallback) =>
     {
         warningCallback(warning);
     }
-    else if (developerConfig.SHOW_WARNINGS && warning)
+    else if (SHOW_WARNINGS && warning)
     {
         console.warn(warning);
     }
@@ -28,7 +28,7 @@ exports.responseToPromise = response => new Promise((resolve, reject) => resolve
 
 exports.log = (...msg) =>
 {
-    if (developerConfig.SHOW_LOGS)
+    if (SHOW_LOGS)
     {
         console.log(...msg);
     }

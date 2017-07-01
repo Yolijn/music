@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
-const databases = require('./app/scripts/databases.js');
+
+const { tracks, artists, albums } = require('./app/scripts/databases.js');
 
 let app = express();
 
@@ -8,9 +9,9 @@ let isProduction = process.env.NODE_ENV === 'production';
 let port = isProduction ? process.env.PORT : 3000;
 let publicPath = path.resolve(__dirname, 'dist');
 
-let getTrack = id => databases.tracks.get(id);
-let getArtist = id => databases.artists.get(id);
-let getAlbum = id => databases.albums.get(id);
+let getTrack = id => tracks.get(id);
+let getArtist = id => artists.get(id);
+let getAlbum = id => albums.get(id);
 
 // We only want to run the workflow when not in production
 if (!isProduction) {

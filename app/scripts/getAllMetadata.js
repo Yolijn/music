@@ -1,15 +1,14 @@
 const gfs = require('graceful-fs');
 const musicmd = require('musicmetadata');
 const acoustid = require('acoustid');
-const helperFunctions = require('./helperfn.js');
-const config = require('../config.json');
+
+const { ACOUSTID_KEY } = require('../config.json');
+const { handleError } = require('./helperfn.js');
 
 /** */
-function getAllMetadata(filePath)
-{
-    return Promise.all([getMetaAcoustid(filePath), getMusicMetadata(filePath)])
+exports.getTrackMetadata = filePath =>
+    Promise.all([getMetaAcoustid(filePath), getMusicMetadata(filePath)])
         .then(results => results.reduce((allData, data) => Object.assign(allData, data), { location: filePath }));
-}
 
 /** */
 function getMusicMetadata(filePath)
@@ -20,7 +19,7 @@ function getMusicMetadata(filePath)
     {
         musicmd(readableStream, (err, results) =>
         {
-            helperFunctions.handleError(err, reject);
+            handleError(err, reject);
 
             let info = {
                 album: {
@@ -44,9 +43,9 @@ function getMusicMetadata(filePath)
 function getMetaAcoustid(filePath)
 {
     return new Promise((resolve, reject) =>
-        acoustid(filePath, { key: config.ACOUSTID_KEY }, (err, result) =>
+        acoustid(filePath, { key: ACOUSTID_KEY }, (err, result) =>
         {
-            helperFunctions.handleError(err, reject);
+            handleError(err, reject);
 
             let track = {
                 _id:      result[0].recordings[0].id,
@@ -58,5 +57,3 @@ function getMetaAcoustid(filePath)
         })
     );
 }
-
-module.exports = getAllMetadata;
