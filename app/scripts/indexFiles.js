@@ -1,6 +1,5 @@
-const helperFunctions = require('./helperFunctions.js');
-const config = require('./config/indexFiles.json');
-const yargs = require('yargs');
+const helperFunctions = require('./helperfn.js');
+const config = require('../config.json');
 const path = require('path');
 const createQueue = require('concurrent-queue');
 const gfs = require('graceful-fs');
@@ -8,28 +7,13 @@ const databases = require('./databases.js');
 const getAllMetadata = require('./getAllMetadata.js');
 
 const AUDIO_REGEXP = new RegExp(config.AUDIO_REGEXP, 'i');
-const IMAGE_REGEXP = new RegExp(config.IMAGE_REGEXP, 'i');
 
 // Create folderQueue FIFO queue with callback function
 const folderQueue = createQueue();
 const musicQueue = createQueue();
 
-// TODO: Use a LIFO Stack to save and retrieve image files
-let imageFilePaths = [];
-
-let yargsConfig = {
-    type:    'array',
-    desc:    'Lists the path for one or more root directories',
-    example: 'script --root /Users/user/Music'
-};
-
-// Use CLI arguments for root file paths
-let args = yargs.option('root', yargsConfig)
-                .demandOption(['root'], 'Provide root directory path(s), if a path contains whitespace: use quotes')
-                .coerce(['root'], a => a.map(b => path.resolve(path.normalize(b))))
-                .argv;
-
-let roots = args.root;
+// TODO: Get root paths from CouchDB config database
+let roots = config.roots.map(root => path.resolve(path.normalize(root)));
 
 /** */
 function readDir(dirPath)
@@ -42,13 +26,11 @@ function readDir(dirPath)
         let folders = contentPaths.filter(content => gfs.statSync(content).isDirectory());
         let files = contentPaths.filter(content => gfs.statSync(content).isFile());
         let musicFiles = files.filter(content => AUDIO_REGEXP.test(content));
-        let imageFiles = files.filter(content => IMAGE_REGEXP.test(content));
 
         helperFunctions.handleError(err);
 
         folders.map(handleFolder);
         musicFiles.map(handleMusicFile);
-        imageFiles.map(handleImageFile);
     });
 }
 
@@ -73,12 +55,6 @@ function handleMusicFile(filePath)
     musicQueue(filePath)
         .then(getAllMetadata)
         .then(addToLibrary);
-}
-
-/** */
-function handleImageFile(filePath)
-{
-    imageFilePaths.push(filePath);
 }
 
 roots.forEach(handleFolder);

@@ -1,4 +1,4 @@
-let developerConfig = require('./config/debug.json');
+let developerConfig = require('../config.json');
 
 exports.handleError = (err, errorCallback) =>
 {

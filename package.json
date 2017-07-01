@@ -1,32 +1,33 @@
 {
-  "name": "index_music",
+  "name": "sites",
   "version": "1.0.0",
-  "description": "Use NodeJS to get music metadata from root directory input to a database",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "webpack --hot [--config webpack.config.js]",
-    "build": "webpack",
-    "test": "node scripts/indexFiles.js --root /Volumes/music ../../Music",
-    "blondie": "node scripts/indexFiles.js --root /Volumes/music/lossless/pop/Blondie",
-    "deleteDB": "node scripts/cli/deleteDB.js"
+    "start": "node app/scripts/indexFiles && node server",
+    "deleteDB": "node cli/deleteDB.js"
   },
-  "author": "Yolijn van der Kolk",
+  "author": "",
   "license": "ISC",
   "dependencies": {
     "acoustid": "^1.2.1",
+    "babel-cli": "^6.24.1",
+    "babel-core": "^6.25.0",
     "concurrent-queue": "^7.0.1",
-    "express": "^4.15.3",
     "graceful-fs": "^4.1.11",
-    "music-library-index": "^2.1.0",
     "musicmetadata": "^2.0.5",
     "pouchdb": "^6.2.0",
-    "pouchdb-find": "^6.2.0",
-    "webpack": "^3.0.0",
-    "yargs": "^8.0.2"
+    "pouchdb-find": "^6.2.0"
   },
   "devDependencies": {
-    "babel-core": "^6.25.0",
     "babel-loader": "^7.1.1",
-    "babel-preset-env": "^1.5.2",
-    "babel-preset-es2015": "^6.24.1"
+    "babel-preset-es2015": "^6.24.1",
+    "express": "^4.15.3",
+    "http-proxy": "^1.16.2",
+    "webpack": "^3.0.0",
+    "webpack-dev-middleware": "^1.11.0",
+    "webpack-dev-server": "^2.5.0",
+    "webpack-hot-middleware": "^2.18.0",
+    "yargs": "^8.0.2"
   }
 }

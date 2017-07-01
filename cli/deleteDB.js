@@ -1,4 +1,4 @@
-const databases = require('../databases.js');
+const databases = require('./app/scripts/databases.js');
 const yargs = require('yargs');
 
 let yargsConfig = {

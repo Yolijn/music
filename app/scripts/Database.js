@@ -1,6 +1,6 @@
-const couchDB = require('./config/couchDB.json');
+const config = require('../config.json');
 const PouchDB = require('pouchdb');
-const helperFunctions = require('./helperFunctions.js');
+const helperFunctions = require('./helperfn.js');
 const path = require('path');
 
 // Setup database for permanent storage of medadata
@@ -10,10 +10,10 @@ class Database
 {
     constructor(name)
     {
-        this.database = new PouchDB(couchDB.URL + name, {
+        this.database = new PouchDB(config.COUCH_URL + name, {
             auth: {
-                username: couchDB.USER,
-                password: couchDB.PASSWORD
+                username: config.COUCH_USER,
+                password: config.COUCH_PASSWORD
             }
         });
 
