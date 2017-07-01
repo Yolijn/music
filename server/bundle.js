@@ -1,13 +1,17 @@
 let webpack = require('webpack');
-let WebpackDevServer = require('webpack-dev-server');
 let webpackConfig = require('./../webpack.config.js');
 let path = require('path');
 let fs = require('fs');
 let mainPath = path.resolve(__dirname, '..', 'app', 'scripts', 'main.js');
+let helperFunctions = require('../app/scripts/helperfn.js');
+let watchOptions = {
+    aggregateTimeout: 300,
+    poll:             1000,
+    ignored:          /node_modules/
+};
 
 module.exports = () =>
 {
-
     // First we fire up Webpack an pass in the configuration we
     // created
     let bundleStart = null;
@@ -28,27 +32,9 @@ module.exports = () =>
         console.log('Bundled in ' + (Date.now() - bundleStart) + 'ms!');
     });
 
-    let bundler = new WebpackDevServer(compiler, {
-
-        // We need to tell Webpack to serve our bundled application
-        // from the build path. When proxying:
-        // http://localhost:3000/build -> http://localhost:8080/build
-        publicPath: '/build/',
-
-        // Configure hot replacement
-        hot: true,
-
-        // The rest is terminal configurations
-        quiet: false,
-        noInfo: true,
-        stats: {
-            colors: true
-       }
-    });
-
-    // We fire up the development server and give notice in the terminal
-    // that we are starting the initial bundle
-    bundler.listen(8080, 'localhost', function () {
-        console.log('Bundling project, please wait...');
+    compiler.watch(watchOptions, (err, stats) =>
+    {
+        helperFunctions.handleError(err);
+        console.log('Watching...');
     });
 };
