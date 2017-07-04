@@ -17,7 +17,10 @@
     "graceful-fs": "^4.1.11",
     "musicmetadata": "^2.0.5",
     "pouchdb": "^6.2.0",
-    "pouchdb-find": "^6.2.0"
+    "pouchdb-find": "^6.2.0",
+    "promise-queue": "^2.2.3",
+    "queue": "^4.2.1",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {
     "babel-loader": "^7.1.1",

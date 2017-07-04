@@ -8,7 +8,8 @@ exports.handleError = (err, errorCallback) =>
     }
     else if (err)
     {
-        throw err;
+        // console.log('ERROR', err);
+        // throw err;
     }
 };
 
@@ -23,8 +24,6 @@ exports.handleWarning = (warning, warningCallback) =>
         console.warn(warning);
     }
 };
-
-exports.responseToPromise = response => new Promise((resolve, reject) => resolve(response));
 
 exports.log = (...msg) =>
 {

@@ -20,19 +20,18 @@ class Database
 
         this.database.createIndex({
             index: {
-                fields: ['_id', 'name', 'location']
+                fields: ['musicBrainzID', 'name', 'location']
             }
         })
-        .then(log(`Database "${name}" created`))
+        .then(log(`Database "${name}" created`), handleError)
         .catch(handleError);
     }
 
     getAll()
     {
         return this.database.allDocs({ 'include_docs': true })
-            .catch(handleError)
-            .then(docs => docs.rows.filter(item => !/^_design/.test(item.id)))
-            .then(docs => docs.map(item => item.doc));
+            .then(docs => docs.rows.filter(item => !/^_design/.test(item.id)), handleError)
+            .then(docs => docs.map(item => item.doc), handleError);
     }
 
     get(id)
@@ -43,42 +42,42 @@ class Database
 
     save(document)
     {
-        this.database.find({ selector: { _id: document._id } })
-            .then((response, err) =>
+        this.getAll()
+        .then(documents => documents.filter(doc => doc.musicBrainzID === document.musicBrainzID))
+        .then(dbDoc =>
+        {
+            if (dbDoc.length === 0)
             {
-                handleError(err);
-                handleWarning(response.warning);
+                this.database.put(document)
+                    .then(log('saved', document._id))
+                    .catch(handleError);
+            }
+            else if (dbDoc.length > 1)
+            {
+                console.log('Warning: Multiple documents with the same musicBrainzID:', document.musicBrainzID);
+            }
+            else
+            {
+                document._rev = dbDoc._rev;
 
-                return response.docs.length > 0;
-            })
-            .then(exists =>
-            {
-                if (!exists)
-                {
-                    this.database.put(document)
-                        .then(log('saved', document._id))
-                        .catch(handleError);
-                }
-                else
-                {
-                    log('already exists', document._id);
-                }
-            });
+                // this.database.put(document)
+                //     .then(log('updated', document._id))
+                //     .catch(handleError);
+            }
+        });
     }
 
     delete(id)
     {
         this.get(id).then(this.database.remove)
-            .then(log('removed', id))
-            .catch(handleError);
+            .then(log('removed', id), handleError);
     }
 
     destroy()
     {
         log('deleting db');
         this.database.destroy()
-            .then(response => log('success', response))
-            .catch(handleError);
+            .then(response => log('success', response), handleError);
     }
 }
 

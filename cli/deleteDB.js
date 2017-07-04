@@ -1,4 +1,4 @@
-const databases = require('./app/scripts/databases.js');
+const databases = require('../app/scripts/databases.js');
 const yargs = require('yargs');
 
 let yargsConfig = {
@@ -12,13 +12,20 @@ let args = yargs.option('delete', yargsConfig)
                 .demandOption(['delete'], 'Provide one or more names of databases to delete')
                 .argv;
 
-args.delete.map(database =>
+args.delete.map(deleteMe =>
 {
-    let db = databases[database];
+    let db = databases[deleteMe];
 
     if (db)
     {
         db.destroy();
+    }
+    else if (deleteMe === 'all')
+    {
+        for (let key in databases)
+        {
+            databases[key].destroy();
+        }
     }
     else
     {

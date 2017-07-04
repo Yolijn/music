@@ -2,11 +2,14 @@
   "COUCH_URL": "http://127.0.0.1:5984/",
   "COUCH_USER": "music_db",
   "COUCH_PASSWORD": "eyesight.tower.briton.tumor.nimbus.acidic.geminate.allotted.wright.rangoon",
-  "SHOW_WARNINGS": false,
+  "SHOW_WARNINGS": true,
   "SHOW_LOGS": true,
   "AUDIO_REGEXP": "\\.(WAV|WAV64|AIFF|FLAC|ALAC|OGG|MP3|AAC)$",
   "ACOUSTID_USER": "QmIXm3EOIg",
   "ACOUSTID_KEY": "G3s5jCW2nd",
-  "rootDirs": ["/Volumes/music/lossless/pop/Blondie"]
+  "rootDirs": ["/Volumes/music/lossless/pop/Blondie"],
+  "MAX_FOLDER_REQUESTS": 5,
+  "MAX_DATA_REQUESTS": 1,
+  "MAX_QUEUE": 1000000
 }
 

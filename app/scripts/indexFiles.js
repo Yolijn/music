@@ -1,17 +1,17 @@
 const path = require('path');
-const createQueue = require('concurrent-queue');
+const Queue = require('promise-queue');
 const gfs = require('graceful-fs');
 
-const { log, handleError, responseToPromise } = require('./helperfn.js');
-const { AUDIO_REGEXP, rootDirs } = require('../config.json');
+const { log, handleError } = require('./helperfn.js');
+const { AUDIO_REGEXP, MAX_FOLDER_REQUESTS, MAX_DATA_REQUESTS, MAX_QUEUE, rootDirs } = require('../config.json');
 const { tracks, artists, albums } = require('./databases.js');
-const { getTrackMetadata } = require('./getAllMetadata.js');
+const { getAllMetadata } = require('./getAllMetadata.js');
 
 const audioRegexp = new RegExp(AUDIO_REGEXP, 'i');
 
 // Create folderQueue FIFO queue with callback function
-const folderQueue = createQueue();
-const musicQueue = createQueue();
+const folderQueue = new Queue(MAX_FOLDER_REQUESTS, MAX_QUEUE);
+const musicQueue = new Queue(MAX_DATA_REQUESTS, MAX_QUEUE);
 
 // TODO: Get root paths from CouchDB config database
 let roots = rootDirs.map(root => path.resolve(path.normalize(root)));
@@ -38,23 +38,31 @@ function readDir(dirPath)
 /** */
 function handleFolder(folderPath)
 {
-    folderQueue(folderPath)
-        .then(readDir)
+    folderQueue.add(() => readDir(folderPath))
         .catch(handleError);
 }
 
 /** */
 function handleMusicFile(filePath)
 {
-    musicQueue(filePath)
-        .then(getTrackMetadata)
-        .then(data =>
-        {
-            tracks.save(data);
-            return data;
-        });
+    musicQueue.add(() => getAllMetadata(filePath))
+        .then(saveMusicData, handleError)
+        .catch(handleError);
+}
+
+/** */
+function saveMusicData(data)
+{
+    // console.log(data);
+    tracks.save(data.track);
+    albums.save(data.album);
+
+    data.artists.forEach(artist => artists.save(artist));
 }
 
 roots.forEach(handleFolder);
-folderQueue.process(responseToPromise);
-musicQueue.process(responseToPromise);
+
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection at', p, 'reason:', reason);
+  // application specific logging, throwing an error, or other logic here
+});
